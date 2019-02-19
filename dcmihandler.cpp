@@ -50,8 +50,6 @@ constexpr auto DHCP_TIMING3_LOWER = 0x40;
 // SendHostNameEnabled will set to true.
 constexpr auto DHCP_OPT12_ENABLED = "SendHostNameEnabled";
 
-constexpr auto DCMI_CAP_JSON_FILE = "/usr/share/ipmi-providers/dcmi_cap.json";
-
 constexpr auto SENSOR_VALUE_INTF = "xyz.openbmc_project.Sensor.Value";
 constexpr auto SENSOR_VALUE_PROP = "Value";
 constexpr auto SENSOR_SCALE_PROP = "Scale";
@@ -66,6 +64,13 @@ namespace dcmi
 static const std::map<uint8_t, std::string> entityIdToName{
     {0x40, "inlet"}, {0x37, "inlet"},     {0x41, "cpu"},
     {0x03, "cpu"},   {0x42, "baseboard"}, {0x07, "baseboard"}};
+
+bool isDCMIPowerMgmtSupported()
+{
+    auto data = parseJSONConfig(gDCMICapabilitiesConfig);
+
+    return (gDCMIPowerMgmtSupported == data.value(gDCMIPowerMgmtCapability, 0));
+}
 
 uint32_t getPcap(sdbusplus::bus::bus& bus)
 {
@@ -275,7 +280,7 @@ void setDHCPOption(std::string prop, bool value)
     ipmi::setDbusProperty(bus, service, dhcpObj, dhcpIntf, prop, value);
 }
 
-Json parseSensorConfig()
+Json parseJSONConfig(const std::string& configFile)
 {
     std::ifstream jsonFile(configFile);
     if (!jsonFile.is_open())
@@ -300,6 +305,13 @@ ipmi_ret_t getPowerLimit(ipmi_netfn_t netfn, ipmi_cmd_t cmd,
                          ipmi_request_t request, ipmi_response_t response,
                          ipmi_data_len_t data_len, ipmi_context_t context)
 {
+    if (!dcmi::isDCMIPowerMgmtSupported())
+    {
+        *data_len = 0;
+        log<level::ERR>("DCMI Power management is unsupported!");
+        return IPMI_CC_INVALID;
+    }
+
     auto requestData =
         reinterpret_cast<const dcmi::GetPowerLimitRequest*>(request);
     std::vector<uint8_t> outPayload(sizeof(dcmi::GetPowerLimitResponse));
@@ -361,6 +373,13 @@ ipmi_ret_t setPowerLimit(ipmi_netfn_t netfn, ipmi_cmd_t cmd,
                          ipmi_request_t request, ipmi_response_t response,
                          ipmi_data_len_t data_len, ipmi_context_t context)
 {
+    if (!dcmi::isDCMIPowerMgmtSupported())
+    {
+        *data_len = 0;
+        log<level::ERR>("DCMI Power management is unsupported!");
+        return IPMI_CC_INVALID;
+    }
+
     auto requestData =
         reinterpret_cast<const dcmi::SetPowerLimitRequest*>(request);
     std::vector<uint8_t> outPayload(sizeof(dcmi::SetPowerLimitResponse));
@@ -400,6 +419,13 @@ ipmi_ret_t applyPowerLimit(ipmi_netfn_t netfn, ipmi_cmd_t cmd,
                            ipmi_request_t request, ipmi_response_t response,
                            ipmi_data_len_t data_len, ipmi_context_t context)
 {
+    if (!dcmi::isDCMIPowerMgmtSupported())
+    {
+        *data_len = 0;
+        log<level::ERR>("DCMI Power management is unsupported!");
+        return IPMI_CC_INVALID;
+    }
+
     auto requestData =
         reinterpret_cast<const dcmi::ApplyPowerLimitRequest*>(request);
     std::vector<uint8_t> outPayload(sizeof(dcmi::ApplyPowerLimitResponse));
@@ -717,7 +743,7 @@ ipmi_ret_t getDCMICapabilities(ipmi_netfn_t netfn, ipmi_cmd_t cmd,
                                ipmi_data_len_t data_len, ipmi_context_t context)
 {
 
-    std::ifstream dcmiCapFile(DCMI_CAP_JSON_FILE);
+    std::ifstream dcmiCapFile(dcmi::gDCMICapabilitiesConfig);
     if (!dcmiCapFile.is_open())
     {
         log<level::ERR>("DCMI Capabilities file not found");
@@ -838,7 +864,7 @@ std::tuple<Response, NumInstances> read(const std::string& type,
         elog<InternalFailure>();
     }
 
-    auto data = parseSensorConfig();
+    auto data = parseJSONConfig(gDCMISensorsConfig);
     static const std::vector<Json> empty{};
     std::vector<Json> readings = data.value(type, empty);
     size_t numInstances = readings.size();
@@ -889,7 +915,7 @@ std::tuple<ResponseList, NumInstances> readAll(const std::string& type,
     sdbusplus::bus::bus bus{ipmid_get_sd_bus_connection()};
 
     size_t numInstances = 0;
-    auto data = parseSensorConfig();
+    auto data = parseJSONConfig(gDCMISensorsConfig);
     static const std::vector<Json> empty{};
     std::vector<Json> readings = data.value(type, empty);
     numInstances = readings.size();
@@ -1222,6 +1248,13 @@ ipmi_ret_t getPowerReading(ipmi_netfn_t netfn, ipmi_cmd_t cmd,
                            ipmi_request_t request, ipmi_response_t response,
                            ipmi_data_len_t data_len, ipmi_context_t context)
 {
+    if (!dcmi::isDCMIPowerMgmtSupported())
+    {
+        *data_len = 0;
+        log<level::ERR>("DCMI Power management is unsupported!");
+        return IPMI_CC_INVALID;
+    }
+
     ipmi_ret_t rc = IPMI_CC_OK;
     auto requestData =
         reinterpret_cast<const dcmi::GetPowerReadingRequest*>(request);
@@ -1410,7 +1443,7 @@ ipmi_ret_t getSensorInfo(ipmi_netfn_t netfn, ipmi_cmd_t cmd,
     {
         if (!parsed)
         {
-            config = dcmi::parseSensorConfig();
+            config = dcmi::parseJSONConfig(dcmi::gDCMISensorsConfig);
             parsed = true;
         }
 
