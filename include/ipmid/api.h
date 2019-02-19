@@ -95,8 +95,36 @@ enum ipmi_net_fns
     NETFUN_OEM_GROUP = 0x2e,
     NETFUN_NONE = 0x30,
     NETFUN_OEM = 0x32,
-    NETFUN_IBM_OEM = 0x3A
+    NETFUN_IBM_OEM = 0x3A,
+    netfunInspurAppOEM = 0x3C
 };
+
+enum IPMINetfnInspurOEMCmd
+{
+    // Get CPU EEPROM info .
+    cmdGetEEPROMAllInfo = 0x00,
+    // set CPU EEPROM info.
+    cmdsetEEPROMInfo = 0x01,
+    // get the number of PSUs.
+    cmdGetPSUNumber = 0x2B,
+    // get PSU status.
+    cmdGetPSUStatus = 0x29,
+    // get the number of SFPs.
+    cmdGetSFPNumber = 0x40,
+    // get the SFP present status.
+    cmdGetSFPPrecentStatus = 0x41,
+    // get the SFP low power mode.
+    cmdGetSFPLowPowerMode = 0x42,
+    // set SFP low power mode.
+    cmdSetSFPLowPowerMode = 0x43,
+    // reset SFP.
+    cmdResetSFP = 0x44,
+    // get SFP EEPROM info.
+    cmdGetSFPEEPROMInfo = 0x45,
+    // get SFP interrupt info.
+    cmdGetSFPInterruptInfo = 0x46
+};
+
 
 // IPMI commands for net functions. Since this is to be used both by the ipmi
 // function router and also the callback handler registration function, its put

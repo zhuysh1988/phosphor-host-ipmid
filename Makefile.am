@@ -91,6 +91,10 @@ libipmi20_la_SOURCES = \
 	ipmi_fru_info_area.cpp \
 	read_fru_data.cpp \
 	sensordatahandler.cpp \
+	psucommands.cpp \
+	i2c.cpp \
+	24cXX.c \
+	sfpcommands.cpp \
 	$(libipmi20_BUILT_LIST)
 
 @CODE_COVERAGE_RULES@
@@ -102,6 +106,7 @@ TESTS = $(check_PROGRAMS)
 
 libipmi20_la_LIBADD = \
 	libipmid/libipmid.la \
+	user_channel/libchannellayer.la \
 	user_channel/libuserlayer.la
 libipmi20_la_LDFLAGS = \
 	$(SYSTEMD_LIBS) \

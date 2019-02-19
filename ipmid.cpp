@@ -54,7 +54,7 @@ std::unique_ptr<phosphor::Timer> networkTimer = nullptr;
 using CommandHandler = phosphor::host::command::CommandHandler;
 
 // Initialise restricted mode to true
-bool restricted_mode = true;
+bool restricted_mode = false;
 
 FILE *ipmiio, *ipmidbus, *ipmicmddetails;
 
