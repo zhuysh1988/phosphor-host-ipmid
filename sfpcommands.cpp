@@ -46,16 +46,17 @@ int setSFPGPIOValue(const int gpio, int value)
     int fd;
 
     std::snprintf(path, sizeof(path), "/sys/class/gpio/gpio%d/value", gpio);
-    fd = open(path, O_RDONLY);
+    fd = open(path, O_WRONLY);
     if (fd < 0)
     {
         std::fprintf(stderr, "Failed to open gpio value for reading!\n");
         return -1;
     }
 
-    if (write(fd, &value_str[value == 0 ? 0 : 2], 1) < 0)
+    int rst = write(fd, &value_str[value == 0 ? 0 : 1], 1);
+    if (rst < 0)
     {
-        std::fprintf(stderr, "Failed to write value!\n");
+        std::fprintf(stderr, "Failed to write value! %d\n", rst);
         return -1;
     }
 
